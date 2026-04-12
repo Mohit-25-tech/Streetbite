@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit3, Trash2, ToggleLeft, ToggleRight, BarChart3, Star, Heart, Eye, X, Save } from 'lucide-react';

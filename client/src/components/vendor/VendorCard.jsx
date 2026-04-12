@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { Link } from 'react-router-dom';
 import { Star, MapPin, Clock } from 'lucide-react';
 

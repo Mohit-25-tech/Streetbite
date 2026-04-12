@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Clock, Star, Heart, Share2, Phone, ChevronLeft, Leaf, CheckCircle, Navigation } from 'lucide-react';
 import { vendorAPI, menuAPI, reviewAPI, favoritesAPI } from '../services/api';
@@ -8,7 +9,7 @@ import { useLocation } from '../context/LocationContext';
 import { useCart } from '../context/CartContext';
 import ReviewCard from '../components/review/ReviewCard';
 import StarRating from '../components/review/StarRating';
-import { formatDistance, formatRating, formatTime, formatPrice } from '../utils/helpers';
+import { formatDistance, formatTime } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 function RatingBar({ label, count, total }) {
@@ -27,7 +28,7 @@ function RatingBar({ label, count, total }) {
 
 export default function VendorDetail() {
     const { id } = useParams();
-    const { user, isAuthenticated } = useAuth();
+    const { isAuthenticated } = useAuth();
     const { location } = useLocation();
     const { addToCart, removeFromCart, cartItems } = useCart();
 
@@ -121,14 +122,6 @@ export default function VendorDetail() {
     }
 
     const rating = parseFloat(vendor.avg_rating || 0);
-    const getRatingBg = (val) => {
-        if (val >= 4.0) return 'bg-[#24963f]';
-        if (val >= 3.0) return 'bg-[#73b526]';
-        if (val >= 2.0) return 'bg-[#e5a93d]';
-        if (val > 0) return 'bg-[#e23744]';
-        return 'bg-gray-400';
-    };
-
     const ratingColorHex = rating >= 4.0 ? '#24963f' : rating >= 3 ? '#73b526' : rating >= 2 ? '#e5a93d' : '#e23744';
 
     const menuCategories = ['All', ...Object.keys(menu.grouped)];

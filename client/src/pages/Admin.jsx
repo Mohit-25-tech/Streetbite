@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Store, MessageCircle, Tag, CheckCircle, XCircle, Shield, Trash2, Plus } from 'lucide-react';

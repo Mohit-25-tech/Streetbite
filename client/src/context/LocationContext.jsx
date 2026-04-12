@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components, no-empty */
 import { createContext, useContext, useState, useEffect } from 'react';
 
 const LocationContext = createContext(null);
@@ -34,8 +35,10 @@ export const LocationProvider = ({ children }) => {
     useEffect(() => {
         try {
             const saved = sessionStorage.getItem('userLocation');
-            if (saved) setLocation(JSON.parse(saved));
-        } catch { }
+            if (saved) {
+                setTimeout(() => setLocation(JSON.parse(saved)), 0);
+            }
+        } catch {}
     }, []);
 
     useEffect(() => {

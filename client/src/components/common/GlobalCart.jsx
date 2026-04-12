@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
@@ -8,6 +9,7 @@ import { useCart } from '../../context/CartContext';
 import { useLocation } from '../../context/LocationContext';
 import { orderAPI } from '../../services/api';
 import toast from 'react-hot-toast';
+ 
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 

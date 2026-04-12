@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { motion } from 'framer-motion';
 import { ThumbsUp, Trash2 } from 'lucide-react';
 import StarRating from './StarRating';

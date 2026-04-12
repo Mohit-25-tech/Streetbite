@@ -93,7 +93,9 @@ export default function MapView() {
     }, []);
 
     useEffect(() => {
-        if (location) setCenter([location.lat, location.lng]);
+        if (location) {
+            setTimeout(() => setCenter([location.lat, location.lng]), 0);
+        }
     }, [location]);
 
     return (

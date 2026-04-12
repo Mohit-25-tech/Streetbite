@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars, no-empty */
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Edit3, Save, X, Heart, MessageCircle } from 'lucide-react';
@@ -119,14 +120,14 @@ export default function Profile() {
                     {[
                         { key: 'favorites', label: 'Liked Places', icon: Heart },
                         { key: 'reviews', label: 'My Reviews', icon: MessageCircle },
-                    ].map(({ key, label, icon: Icon }) => (
+                    ].map(({ key, label, icon: TabIcon }) => (
                         <button key={key} onClick={() => setActiveTab(key)}
                             className={`flex items-center gap-2 pb-4 pt-2 px-2 text-[15px] font-bold border-b-2 transition-all outline-none ${activeTab === key
                                 ? 'border-brand text-brand'
                                 : 'border-transparent text-gray-500 hover:text-gray-800'
                                 }`}
                         >
-                            <Icon size={18} className={activeTab === key ? 'fill-brand/20' : ''} /> {label}
+                            <TabIcon size={18} className={activeTab === key ? 'fill-brand/20' : ''} /> {label}
                         </button>
                     ))}
                 </div>

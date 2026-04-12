@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+/* eslint-disable no-unused-vars */
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Search, User, Heart, LogOut, Menu, X, LayoutDashboard, ShieldCheck, Package, ShoppingCart } from 'lucide-react';

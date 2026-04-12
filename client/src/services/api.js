@@ -34,7 +34,7 @@ api.interceptors.response.use(
                     originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
                     return api(originalRequest);
                 }
-            } catch (err) {
+            } catch {
                 sessionStorage.removeItem('accessToken');
                 sessionStorage.removeItem('refreshToken');
                 sessionStorage.removeItem('user');

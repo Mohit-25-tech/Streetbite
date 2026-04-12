@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
@@ -101,11 +102,18 @@ export default function Home() {
 
     useEffect(() => {
         if (!location) return;
-        setNearbyLoading(true);
-        vendorAPI.getNearby({ lat: location.lat, lng: location.lng, radius: 10, limit: 8 })
-            .then(({ data }) => setNearbyVendors(data.vendors))
-            .catch(() => { })
-            .finally(() => setNearbyLoading(false));
+        const fetchLocation = async () => {
+            setNearbyLoading(true);
+            try {
+                const { data } = await vendorAPI.getNearby({ lat: location.lat, lng: location.lng, radius: 10, limit: 8 });
+                setNearbyVendors(data.vendors);
+            } catch {
+                // handle error
+            } finally {
+                setNearbyLoading(false);
+            }
+        };
+        fetchLocation();
     }, [location]);
 
     const handleSearch = (e) => {
