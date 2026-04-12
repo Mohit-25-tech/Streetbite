@@ -1,6 +1,15 @@
-# 🍜 StreetBite — Street Food Locator Web Application
+# 🍜 StreetBite — Street Food Locator & Multi-Vendor Ordering Platform
 
-A full-stack, production-grade street food locator web application built with **React + Vite** (frontend) and **Node.js + Express + PostgreSQL** (backend).
+A full-stack, production-grade street food locator and food-ordering web application built with **React + Vite** (frontend) and **Node.js + Express + PostgreSQL** (backend).
+
+StreetBite allows users to discover local street food, view menus, and place orders seamlessly across **multiple vendors simultaneously** using a global sliding cart architecture.
+
+---
+
+## 🚀 Live Demo
+
+- **Frontend (Vercel)**: [View Live App](#)
+- **Backend API (Render)**: [API Endpoint](#) *(Returns 404 for root `/`, use `/api/health`)*
 
 ---
 
@@ -8,15 +17,15 @@ A full-stack, production-grade street food locator web application built with **
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18 + Vite, Tailwind CSS, Framer Motion, React Router v6 |
-| Maps | Leaflet.js + React-Leaflet (OpenStreetMap) |
-| State | TanStack Query (React Query) + React Context |
-| Forms | React Hook Form + Zod validation |
-| Backend | Node.js + Express.js |
-| Database | PostgreSQL with raw `pg` (node-postgres) |
-| Auth | JWT (access + refresh tokens), Bcryptjs |
-| Notifications | React Hot Toast |
-| Icons | Lucide React |
+| **Frontend** | React 18 + Vite, Vanilla CSS, Framer Motion, React Router v6 |
+| **Maps & Geolocation**| Leaflet.js + React-Leaflet (OpenStreetMap) |
+| **State Management** | TanStack Query (React Query) + Custom React Contexts (Auth, Location, Cart) |
+| **Forms** | React Hook Form + Zod validation |
+| **Backend** | Node.js + Express.js |
+| **Database** | PostgreSQL with raw `pg` (node-postgres) hosted on Neon.tech |
+| **Auth** | JWT (access + refresh tokens), Bcryptjs |
+| **Notifications** | React Hot Toast |
+| **Icons** | Lucide React |
 
 ---
 
@@ -24,169 +33,102 @@ A full-stack, production-grade street food locator web application built with **
 
 ```
 streetbite/
-├── client/                  # React Vite Frontend
+├── client/                  # React Vite Frontend (Deployed on Vercel)
 │   └── src/
-│       ├── components/      # Navbar, VendorCard, ReviewCard, StarRating, etc.
-│       ├── context/         # AuthContext, LocationContext
+│       ├── components/      # GlobalCart, Navbar, VendorCard, ReviewCard, etc.
+│       ├── context/         # AuthContext, LocationContext, CartContext
 │       ├── hooks/           # useGeolocation
-│       ├── pages/           # Home, Explore, VendorDetail, MapView, Dashboard, Profile, Admin
-│       ├── services/        # api.js (all Axios calls)
+│       ├── pages/           # Home, Explore, VendorDetail, MapView, Checkout, PastOrders
+│       ├── services/        # api.js (Axios configuration)
 │       └── utils/           # helpers.js
-├── server/                  # Express Backend
-│   ├── config/              # db.js (PostgreSQL pool)
-│   ├── controllers/         # auth, vendor, review, menu, admin, favorites
+├── server/                  # Node.js Express Backend (Deployed on Render)
+│   ├── config/              # db.js (PostgreSQL pool with Neon support)
+│   ├── controllers/         # auth, vendor, review, menu, admin, favorites, order
 │   ├── middleware/          # authMiddleware, errorMiddleware
-│   ├── routes/              # authRoutes, vendorRoutes, reviewRoutes, etc.
-│   ├── utils/               # geoHelper.js (Haversine formula)
-│   ├── migration.sql        # Full DB schema
-│   ├── seed.js              # Sample data seeder
+│   ├── routes/              # Express API Routes
+│   ├── migration.sql        # Core DB schema (Users, Vendors, Menu)
+│   ├── orders_migration.sql # Orders & Order Items DB schema
+│   ├── seed.js              # Sample data seeder (10 Vendors, 20 Items, etc.)
 │   └── server.js            # Express entry point
-├── .env                     # Environment variables
-└── .env.example             # Template
+└── .env                     # Environment variables
 ```
 
 ---
 
-## 🚀 Setup Instructions
+## ✨ Key Features
 
-### Prerequisites
-- Node.js v18+
-- PostgreSQL 14+
-- npm 9+
-
-### 1. Clone & Install
-
-```bash
-# Install server dependencies
-cd streetbite/server
-npm install
-
-# Install client dependencies
-cd ../client
-npm install
-```
-
-### 2. Configure Environment
-
-Edit `.env` in the `streetbite/` root:
-
-```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=streetbite_db
-DB_USER=postgres
-DB_PASSWORD=your_actual_password   # ← CHANGE THIS
-
-JWT_SECRET=any-long-random-string-here
-JWT_REFRESH_SECRET=another-long-random-string
-```
-
-### 3. Create Database & Run Migrations
-
-```bash
-# Create the database
-psql -U postgres -c "CREATE DATABASE streetbite_db;"
-
-# Run migrations
-psql -U postgres -d streetbite_db -f streetbite/server/migration.sql
-```
-
-### 4. Seed Sample Data
-
-```bash
-cd streetbite/server
-node seed.js
-```
-
-This creates:
-- 1 admin user, 3 vendor users, 5 regular users
-- 10 verified vendors across India
-- 8 food categories
-- 20 menu items
-- 15 reviews with ratings
-
-### 5. Start the Application
-
-**Terminal 1 — Backend:**
-```bash
-cd streetbite/server
-npm run dev       # nodemon server.js on port 5000
-```
-
-**Terminal 2 — Frontend:**
-```bash
-cd streetbite/client
-npm run dev       # Vite dev server on port 5173
-```
-
-Open: **http://localhost:5173**
+- **Multi-Vendor Global Cart**: Order from multiple street food stalls at the same time. The cart intelligently splits and processes independent orders per vendor.
+- **Interactive Checkout Flow**: Multi-step checkout including Map Validation, Summary, Payment options, and order tracking.
+- **Real-Time Discovery**: Animated hero, category pills, featured vendors, and live search with debounce filters.
+- **Interactive Map View**: Full-screen Leaflet map, custom markers, user location detection, and proximity radius circles.
+- **Vendor Dashboards**: Analytics, menu CRUD operations, open/close shop toggle, and profile editing.
+- **Admin Panel**: High-level platform statistics, vendor verification approval, and user management.
+- **Robust Authentication**: JWT access (15m) + secure HTTP-only refresh (7d) tokens with strict role-based routing (Admin, Vendor, User).
 
 ---
 
 ## 🔑 Demo Credentials
 
+Test out the live application using the following seeded credentials:
+
 | Role | Email | Password |
 |---|---|---|
-| Admin | admin@streetbite.com | admin123 |
-| Vendor | ramesh@vendor.com | vendor123 |
-| User | user1@example.com | user1234 |
+| **Admin** | admin@streetbite.com | admin123 |
+| **Vendor** | ramesh@vendor.com | vendor123 |
+| **User** | user1@example.com | user1234 |
 
 ---
 
-## ✨ Features
+## ⚡ Deployment Guide (Cloud)
 
-- **Home**: Animated hero, category pills, featured vendors, stats counter, testimonials
-- **Explore**: Real-time search with debounce, cuisine/rating/open filters, sort, pagination
-- **Map View**: Full-screen Leaflet map, custom markers, user location detection, radius circle
-- **Vendor Detail**: Hero image, categorized menu, rating breakdown, review form
-- **Favorites**: Save/remove vendors, persistent across sessions
-- **Vendor Dashboard**: Analytics, menu CRUD, open/close toggle, profile editing
-- **User Profile**: Edit name/avatar, favorites & review history
-- **Admin Panel**: Stats, vendor verification, user management, category CRUD
-- **Auth**: JWT access (15m) + refresh (7d) tokens, role-based routing
+This application is designed to be completely decoupled and natively ready for Cloud Deployment without needing local databases.
+
+### 1. Database (Neon.tech)
+1. Create a free PostgreSQL database on [Neon.tech](https://neon.tech/).
+2. Copy the **Pooled Connection String** (e.g. `postgres://...-pooler...`).
+
+### 2. Backend (Render.com)
+1. Connect your GitHub repository to a new **Web Service** on Render.
+2. **Root Directory**: `server`
+3. **Build Command**: `npm install`
+4. **Start Command**: `node run_orders_migration.js && npm start` *(The migration automatically structures the DB on boot!)*
+5. **Environment Variables**:
+   - `NODE_ENV` = `production`
+   - `DATABASE_URL` = `[Your Neon Connection String]`
+   - `JWT_SECRET` = `[Random Secret]`
+   - `JWT_REFRESH_SECRET` = `[Random Secret]`
+   - `CLIENT_URL` = `[Your Vercel URL]` *(Add this after deploying frontend)*
+
+### 3. Frontend (Vercel)
+1. Import your repository into a new **Vercel** project.
+2. **Root Directory**: `client`
+3. **Framework Preset**: `Vite`
+4. **Environment Variables**:
+   - `VITE_API_URL` = `https://[your-render-backend-url]/api`
+5. Click **Deploy**. Update Render's `CLIENT_URL` with your new Vercel URL to fix CORS.
+
+*Looking to populate test data? Change the Render Start Command temporarily to:* 
+`node run_orders_migration.js && npm run seed && npm start`
 
 ---
 
-## 🔌 API Endpoints
+## 🔌 Core API Endpoints
 
 ```
-POST   /api/auth/register
-POST   /api/auth/login
-GET    /api/auth/me
-POST   /api/auth/refresh
-PUT    /api/auth/profile
+[AUTH]
+POST   /api/auth/register, /api/auth/login, /api/auth/refresh
 
+[VENDORS & MENU]
 GET    /api/vendors              (search, filter, sort, paginate)
-GET    /api/vendors/featured
 GET    /api/vendors/nearby       (?lat=&lng=&radius=)
-GET    /api/vendors/my           (vendor's own profile)
-GET    /api/vendors/:id
-POST   /api/vendors
-PUT    /api/vendors/:id
-DELETE /api/vendors/:id
-GET    /api/vendors/:id/analytics
+GET    /api/menu/:vendorId       (fetch grouped menus)
 
-GET    /api/menu/:vendorId
-POST   /api/menu
-PUT    /api/menu/:id
-DELETE /api/menu/:id
+[ORDERS & CART]
+POST   /api/orders               (Create multi-vendor orders)
+GET    /api/orders/my            (Fetch past orders & items)
+POST   /api/reviews              (Review system strictly attached to Past Orders)
 
-GET    /api/reviews/:vendorId
-POST   /api/reviews
-DELETE /api/reviews/:id
-PUT    /api/reviews/:id/helpful
-GET    /api/reviews/user/my
-
-GET    /api/favorites
-GET    /api/favorites/check/:vendorId
-POST   /api/favorites/:vendorId
-DELETE /api/favorites/:vendorId
-
-GET    /api/admin/stats
-GET    /api/admin/vendors
+[ADMIN]
+GET    /api/admin/stats          (Platform-wide analytics)
 PUT    /api/admin/vendors/:id/verify
-GET    /api/admin/users
-DELETE /api/admin/users/:id
-GET    /api/admin/categories
-POST   /api/admin/categories
 ```
