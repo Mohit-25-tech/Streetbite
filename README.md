@@ -8,8 +8,8 @@ StreetBite allows users to discover local street food, view menus, and place ord
 
 ## 🚀 Live Demo
 
-- **Frontend (Vercel)**: [View Live App](#)
-- **Backend API (Render)**: [API Endpoint](#) *(Returns 404 for root `/`, use `/api/health`)*
+- **Frontend (Vercel)**: [View Live App](https://streetbite-gamma.vercel.app/)
+- **Backend API (Render)**: [API Endpoint](https://streetbite-server.onrender.com/) *(Returns 404 for root `/`, use `/api/health`)*
 
 ---
 
