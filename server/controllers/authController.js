@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { query } = require('../config/db');
+const crypto = require('crypto');
+const { query, getClient } = require('../config/db');
 const { validationResult } = require('express-validator');
 
 const generateTokens = (userId) => {
@@ -11,6 +12,26 @@ const generateTokens = (userId) => {
         expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
     });
     return { accessToken, refreshToken };
+};
+
+const buildPasswordResetLink = (token) => {
+    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+    return `${clientUrl}/reset-password/${token}`;
+};
+
+const createPasswordResetToken = async (userId) => {
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
+
+    await query('DELETE FROM password_reset_tokens WHERE user_id = $1 AND used_at IS NULL', [userId]);
+    await query(
+        `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+         VALUES ($1, $2, $3)`,
+        [userId, tokenHash, expiresAt]
+    );
+
+    return { rawToken, tokenHash, expiresAt };
 };
 
 // @route POST /api/auth/register
@@ -115,4 +136,91 @@ const logout = async (req, res) => {
     res.json({ success: true, message: 'Logged out successfully.' });
 };
 
-module.exports = { register, login, getMe, refreshToken, updateProfile, logout };
+// @route POST /api/auth/forgot-password
+const forgotPassword = async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
+
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ success: false, message: 'Email is required.' });
+    }
+
+    try {
+        const result = await query('SELECT id, name, email FROM users WHERE email = $1', [email]);
+        if (result.rows.length === 0) {
+            return res.json({
+                success: true,
+                message: 'If the email exists, a reset link has been prepared.',
+            });
+        }
+
+        const user = result.rows[0];
+        const { rawToken } = await createPasswordResetToken(user.id);
+        const resetLink = buildPasswordResetLink(rawToken);
+
+        res.json({
+            success: true,
+            message: 'Password reset link generated successfully.',
+            resetLink,
+        });
+    } catch (err) {
+        console.error('Forgot password error:', err);
+        res.status(500).json({ success: false, message: 'Could not start password reset.' });
+    }
+};
+
+// @route POST /api/auth/reset-password
+const resetPassword = async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
+
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+        return res.status(400).json({ success: false, message: 'Token and password are required.' });
+    }
+
+    try {
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+        const result = await query(
+            `SELECT prt.id, prt.user_id, u.email
+             FROM password_reset_tokens prt
+             JOIN users u ON u.id = prt.user_id
+             WHERE prt.token_hash = $1
+               AND prt.used_at IS NULL
+               AND prt.expires_at > NOW()
+             LIMIT 1`,
+            [tokenHash]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(400).json({ success: false, message: 'Reset link is invalid or expired.' });
+        }
+
+        const resetRow = result.rows[0];
+        const newHash = await bcrypt.hash(password, 12);
+        const client = await getClient();
+
+        try {
+            await client.query('BEGIN');
+            await client.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, resetRow.user_id]);
+            await client.query('UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1', [resetRow.id]);
+            await client.query('UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = $1 AND id <> $2 AND used_at IS NULL', [resetRow.user_id, resetRow.id]);
+            await client.query('COMMIT');
+        } catch (transactionErr) {
+            await client.query('ROLLBACK');
+            throw transactionErr;
+        } finally {
+            client.release();
+        }
+
+        res.json({ success: true, message: 'Password updated successfully.' });
+    } catch (err) {
+        console.error('Reset password error:', err);
+        res.status(500).json({ success: false, message: 'Could not reset password.' });
+    }
+};
+
+module.exports = { register, login, getMe, refreshToken, updateProfile, logout, forgotPassword, resetPassword };

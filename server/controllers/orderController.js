@@ -5,11 +5,30 @@ const { query, getClient } = require('../config/db');
 // @access  Private
 const createOrder = async (req, res) => {
     const userId = req.user.id;
-    const { vendorId, items, totalAmount, paymentMethod, distanceKm } = req.body;
+    const {
+        vendorId,
+        items,
+        totalAmount,
+        paymentMethod,
+        paymentStatus,
+        paymentProvider,
+        paymentReference,
+        paymentDetails,
+        distanceKm,
+    } = req.body;
 
     if (!vendorId || !items || items.length === 0 || !totalAmount) {
         return res.status(400).json({ message: 'Please provide all required fields' });
     }
+
+    const allowedPaymentMethods = ['COD', 'CARD', 'UPI', 'WALLET', 'NETBANKING'];
+    const normalizedPaymentMethod = allowedPaymentMethods.includes(String(paymentMethod || '').toUpperCase())
+        ? String(paymentMethod).toUpperCase()
+        : 'COD';
+    const normalizedPaymentStatus = paymentStatus || (normalizedPaymentMethod === 'COD' ? 'pending' : 'paid');
+    const resolvedPaymentProvider = paymentProvider || (normalizedPaymentMethod === 'COD' ? 'Cash on Delivery' : 'StreetBite Pay');
+    const resolvedPaymentReference = paymentReference || `SB-${normalizedPaymentMethod}-${Date.now().toString(36).toUpperCase()}`;
+    const resolvedPaymentDetails = paymentDetails ? JSON.stringify(paymentDetails) : JSON.stringify({});
 
     const client = await getClient();
     try {
@@ -17,9 +36,29 @@ const createOrder = async (req, res) => {
 
         // Insert order
         const orderRes = await client.query(
-            `INSERT INTO orders (user_id, vendor_id, total_amount, payment_method, delivery_distance_km) 
-             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-            [userId, vendorId, totalAmount, paymentMethod, distanceKm || null]
+            `INSERT INTO orders (
+                user_id,
+                vendor_id,
+                total_amount,
+                payment_method,
+                payment_status,
+                payment_provider,
+                payment_reference,
+                payment_details,
+                delivery_distance_km
+            )
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9) RETURNING *`,
+            [
+                userId,
+                vendorId,
+                totalAmount,
+                normalizedPaymentMethod,
+                normalizedPaymentStatus,
+                resolvedPaymentProvider,
+                resolvedPaymentReference,
+                resolvedPaymentDetails,
+                distanceKm || null,
+            ]
         );
         const order = orderRes.rows[0];
 
@@ -33,7 +72,16 @@ const createOrder = async (req, res) => {
         }
 
         await client.query('COMMIT');
-        res.status(201).json({ success: true, order });
+        res.status(201).json({
+            success: true,
+            order,
+            payment: {
+                method: normalizedPaymentMethod,
+                status: normalizedPaymentStatus,
+                provider: resolvedPaymentProvider,
+                reference: resolvedPaymentReference,
+            },
+        });
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Create order error:', error);

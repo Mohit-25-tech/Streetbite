@@ -18,6 +18,8 @@ import VendorDetail from './pages/VendorDetail';
 import MapView from './pages/MapView';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import CreateVendor from './pages/CreateVendor';
 import Profile from './pages/Profile';
@@ -69,6 +71,8 @@ function AppRoutes() {
             <Route path="/map" element={<MapView />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/orders" element={<ProtectedRoute><PastOrders /></ProtectedRoute>} />
             <Route path="/favorites" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

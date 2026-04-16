@@ -80,6 +80,13 @@ export default function Login() {
                             {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
                         </div>
 
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-500">Need help logging in?</span>
+                            <Link to="/forgot-password" className="font-semibold text-orange-500 hover:underline">
+                                Forgot password?
+                            </Link>
+                        </div>
+
                         <motion.button
                             whileHover={{ scale: 1.01 }}
                             whileTap={{ scale: 0.98 }}

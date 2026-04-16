@@ -59,6 +59,8 @@ streetbite/
 
 - **Multi-Vendor Global Cart**: Order from multiple street food stalls at the same time. The cart intelligently splits and processes independent orders per vendor.
 - **Interactive Checkout Flow**: Multi-step checkout including Map Validation, Summary, Payment options, and order tracking.
+- **Modern Demo Payments**: Card, UPI, wallet, net banking, and COD flows with stored payment metadata and payment status history.
+- **Password Recovery**: Token-backed forgot-password and reset-password flow built into the login experience.
 - **Real-Time Discovery**: Animated hero, category pills, featured vendors, and live search with debounce filters.
 - **Interactive Map View**: Full-screen Leaflet map, custom markers, user location detection, and proximity radius circles.
 - **Vendor Dashboards**: Analytics, menu CRUD operations, open/close shop toggle, and profile editing.
@@ -117,6 +119,7 @@ This application is designed to be completely decoupled and natively ready for C
 ```
 [AUTH]
 POST   /api/auth/register, /api/auth/login, /api/auth/refresh
+POST   /api/auth/forgot-password, /api/auth/reset-password
 
 [VENDORS & MENU]
 GET    /api/vendors              (search, filter, sort, paginate)

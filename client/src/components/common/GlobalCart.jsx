@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { X, MapPin, CreditCard, CheckCircle, Store, Trash2 } from 'lucide-react';
+import { X, MapPin, CreditCard, CheckCircle, Store, Trash2, Smartphone, Wallet, Building2, BadgeCheck, QrCode, ShieldCheck } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useLocation } from '../../context/LocationContext';
 import { orderAPI } from '../../services/api';
@@ -49,10 +49,94 @@ export default function GlobalCart() {
 
     const [step, setStep] = useState(1);
     const [paymentMethod, setPaymentMethod] = useState('COD');
+    const [paymentForm, setPaymentForm] = useState({
+        cardName: '',
+        cardNumber: '',
+        cardExpiry: '',
+        cardCvv: '',
+        upiId: '',
+        walletProvider: 'PhonePe',
+        bankName: 'HDFC Bank',
+    });
     const [loading, setLoading] = useState(false);
 
     const vendorGroups = Object.values(groupedCart);
     const vendors = vendorGroups.map(g => g.vendor);
+    const checkoutLabel = paymentMethod === 'COD' ? 'Confirm Order' : 'Pay Securely & Place Order';
+    const paymentBadge = paymentMethod === 'COD' ? 'Pay later' : 'Mock secure checkout';
+
+    const paymentOptions = [
+        { id: 'CARD', label: 'Credit / Debit Card', description: '3D Secure mock card flow', icon: CreditCard, badge: 'Popular' },
+        { id: 'UPI', label: 'UPI', description: 'Scan and pay instantly', icon: QrCode, badge: 'Fastest' },
+        { id: 'WALLET', label: 'Wallet', description: 'PhonePe, Paytm, Amazon Pay', icon: Wallet, badge: 'One tap' },
+        { id: 'NETBANKING', label: 'Net Banking', description: 'Choose your bank and confirm', icon: Building2, badge: 'Secure' },
+        { id: 'COD', label: 'Cash on Delivery', description: 'Pay at the stall or upon arrival', icon: BadgeCheck, badge: 'Fallback' },
+    ];
+
+    const buildPaymentMetadata = () => {
+        const checkoutReference = `SB-${Date.now().toString(36).toUpperCase()}`;
+
+        if (paymentMethod === 'CARD') {
+            return {
+                paymentStatus: 'paid',
+                paymentProvider: 'StreetBite Pay • Card',
+                paymentReference: checkoutReference,
+                paymentDetails: {
+                    method: 'CARD',
+                    cardName: paymentForm.cardName,
+                    cardLast4: paymentForm.cardNumber.slice(-4),
+                    cardExpiry: paymentForm.cardExpiry,
+                    cardBrand: 'Visa / Mastercard',
+                },
+            };
+        }
+
+        if (paymentMethod === 'UPI') {
+            return {
+                paymentStatus: 'paid',
+                paymentProvider: 'StreetBite Pay • UPI',
+                paymentReference: checkoutReference,
+                paymentDetails: {
+                    method: 'UPI',
+                    upiId: paymentForm.upiId,
+                    flow: 'QR Scan',
+                },
+            };
+        }
+
+        if (paymentMethod === 'WALLET') {
+            return {
+                paymentStatus: 'paid',
+                paymentProvider: `StreetBite Pay • ${paymentForm.walletProvider}`,
+                paymentReference: checkoutReference,
+                paymentDetails: {
+                    method: 'WALLET',
+                    walletProvider: paymentForm.walletProvider,
+                },
+            };
+        }
+
+        if (paymentMethod === 'NETBANKING') {
+            return {
+                paymentStatus: 'paid',
+                paymentProvider: `StreetBite Pay • ${paymentForm.bankName}`,
+                paymentReference: checkoutReference,
+                paymentDetails: {
+                    method: 'NETBANKING',
+                    bankName: paymentForm.bankName,
+                },
+            };
+        }
+
+        return {
+            paymentStatus: 'pending',
+            paymentProvider: 'Cash on Delivery',
+            paymentReference: checkoutReference,
+            paymentDetails: {
+                method: 'COD',
+            },
+        };
+    };
 
     // Reset step when closed
     useEffect(() => {
@@ -76,8 +160,19 @@ export default function GlobalCart() {
     };
 
     const handlePlaceOrder = async () => {
+        if (paymentMethod === 'CARD' && (!paymentForm.cardName || !paymentForm.cardNumber || !paymentForm.cardExpiry || !paymentForm.cardCvv)) {
+            toast.error('Please complete the card details first.');
+            return;
+        }
+
+        if (paymentMethod === 'UPI' && !paymentForm.upiId) {
+            toast.error('Please enter a UPI ID.');
+            return;
+        }
+
         setLoading(true);
         try {
+            const paymentMeta = buildPaymentMetadata();
             // Process ALL orders via Promise.all (Multi-vendor support)
             const orderPromises = vendorGroups.map(async (group) => {
                 const mappedItems = group.items.map(i => ({ menu_item_id: i.id, quantity: i.quantity, unit_price: i.price }));
@@ -86,6 +181,15 @@ export default function GlobalCart() {
                     items: mappedItems,
                     totalAmount: group.total,
                     paymentMethod,
+                    paymentStatus: paymentMeta.paymentStatus,
+                    paymentProvider: paymentMeta.paymentProvider,
+                    paymentReference: `${paymentMeta.paymentReference}-${group.vendor.id.slice(0, 6).toUpperCase()}`,
+                    paymentDetails: {
+                        ...paymentMeta.paymentDetails,
+                        checkoutReference: paymentMeta.paymentReference,
+                        vendorId: group.vendor.id,
+                        vendorName: group.vendor.name,
+                    },
                     distanceKm: group.vendor.distance_km || 0
                 });
             });
@@ -243,32 +347,114 @@ export default function GlobalCart() {
                         {/* STEP 3: PAYMENT METHOD */}
                         {step === 3 && (
                             <div className="p-5 pb-24">
-                                <h3 className="font-bold text-gray-900 text-[18px] mb-2">Payment Details</h3>
-                                <p className="text-sm text-gray-500 mb-6">How would you like to pay the total of ₹{cartTotal}?</p>
-                                
-                                <div className="space-y-3 mb-8">
-                                    <label className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'COD' ? 'border-brand bg-brand/5 shadow-sm shadow-brand/10' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
-                                        <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'COD'} onChange={() => setPaymentMethod('COD')} />
-                                        <div className={`w-5 h-5 rounded-full border-2 mr-4 flex items-center justify-center transition-colors ${paymentMethod === 'COD' ? 'border-brand' : 'border-gray-300'}`}>
-                                            {paymentMethod === 'COD' && <div className="w-2.5 h-2.5 bg-brand rounded-full" />}
+                                <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-2xl p-5 mb-5 shadow-lg">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div>
+                                            <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-white/60">Secure Demo Checkout</p>
+                                            <h3 className="font-black text-[20px] mt-1 leading-tight">Choose how you want to pay</h3>
+                                            <p className="text-white/70 text-[13px] mt-2">{paymentBadge}</p>
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="font-bold text-gray-900 text-[15px]">Cash on Delivery</p>
-                                            <p className="text-[13px] text-gray-500 font-medium mt-0.5">Pay at the stall or upon delivery</p>
+                                        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10 shrink-0">
+                                            <ShieldCheck size={22} className="text-brand-light" />
                                         </div>
-                                    </label>
-                                    
-                                    <label className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'CARD' ? 'border-brand bg-brand/5 shadow-sm shadow-brand/10' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
-                                        <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CARD'} onChange={() => setPaymentMethod('CARD')} />
-                                        <div className={`w-5 h-5 rounded-full border-2 mr-4 flex items-center justify-center transition-colors ${paymentMethod === 'CARD' ? 'border-brand' : 'border-gray-300'}`}>
-                                            {paymentMethod === 'CARD' && <div className="w-2.5 h-2.5 bg-brand rounded-full" />}
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3 mt-5 text-[12px] font-semibold">
+                                        <div className="rounded-xl bg-white/8 border border-white/10 px-3 py-2">
+                                            <p className="text-white/55 uppercase tracking-widest text-[10px] mb-1">Orders</p>
+                                            <p>{vendors.length} vendor{vendors.length > 1 ? 's' : ''}</p>
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="font-bold text-gray-900 text-[15px]">Credit / Debit Card</p>
-                                            <p className="text-[13px] text-gray-500 font-medium mt-0.5">Mock online payment</p>
+                                        <div className="rounded-xl bg-white/8 border border-white/10 px-3 py-2">
+                                            <p className="text-white/55 uppercase tracking-widest text-[10px] mb-1">Total</p>
+                                            <p>₹{cartTotal}</p>
                                         </div>
-                                        <CreditCard size={20} className={paymentMethod === 'CARD' ? 'text-brand' : 'text-gray-400'} />
-                                    </label>
+                                        <div className="rounded-xl bg-white/8 border border-white/10 px-3 py-2">
+                                            <p className="text-white/55 uppercase tracking-widest text-[10px] mb-1">Mode</p>
+                                            <p>{paymentMethod}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h3 className="font-bold text-gray-900 text-[18px] mb-2">Payment Methods</h3>
+                                <p className="text-sm text-gray-500 mb-4">How would you like to pay the total of ₹{cartTotal}?</p>
+
+                                <div className="space-y-3 mb-5">
+                                    {paymentOptions.map(({ id, label, description, icon: Icon, badge }) => (
+                                        <label key={id} className={`flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all ${paymentMethod === id ? 'border-brand bg-brand/5 shadow-sm shadow-brand/10' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
+                                            <input type="radio" name="payment" className="hidden" checked={paymentMethod === id} onChange={() => setPaymentMethod(id)} />
+                                            <div className={`w-5 h-5 rounded-full border-2 mr-4 flex items-center justify-center transition-colors ${paymentMethod === id ? 'border-brand' : 'border-gray-300'}`}>
+                                                {paymentMethod === id && <div className="w-2.5 h-2.5 bg-brand rounded-full" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="font-bold text-gray-900 text-[15px]">{label}</p>
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full bg-gray-100 text-gray-500">{badge}</span>
+                                                </div>
+                                                <p className="text-[13px] text-gray-500 font-medium mt-0.5">{description}</p>
+                                            </div>
+                                            <Icon size={20} className={paymentMethod === id ? 'text-brand' : 'text-gray-400'} />
+                                        </label>
+                                    ))}
+                                </div>
+
+                                {paymentMethod === 'CARD' && (
+                                    <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-5 shadow-sm space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="font-bold text-gray-900">Card details</h4>
+                                            <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Demo only</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <input value={paymentForm.cardName} onChange={(e) => setPaymentForm(prev => ({ ...prev, cardName: e.target.value }))} placeholder="Cardholder name" className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10" />
+                                            <input value={paymentForm.cardNumber} onChange={(e) => setPaymentForm(prev => ({ ...prev, cardNumber: e.target.value.replace(/\D/g, '').slice(0, 16) }))} placeholder="1234 5678 9012 3456" inputMode="numeric" className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10" />
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <input value={paymentForm.cardExpiry} onChange={(e) => setPaymentForm(prev => ({ ...prev, cardExpiry: e.target.value }))} placeholder="MM/YY" className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10" />
+                                                <input value={paymentForm.cardCvv} onChange={(e) => setPaymentForm(prev => ({ ...prev, cardCvv: e.target.value.replace(/\D/g, '').slice(0, 4) }))} placeholder="CVV" inputMode="numeric" className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {paymentMethod === 'UPI' && (
+                                    <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-5 shadow-sm space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="font-bold text-gray-900">UPI payment</h4>
+                                            <span className="text-[11px] font-bold uppercase tracking-widest text-green-600 bg-green-50 px-2 py-1 rounded-full">Scan flow</span>
+                                        </div>
+                                        <input value={paymentForm.upiId} onChange={(e) => setPaymentForm(prev => ({ ...prev, upiId: e.target.value }))} placeholder="yourname@upi" className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10" />
+                                    </div>
+                                )}
+
+                                {paymentMethod === 'WALLET' && (
+                                    <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-5 shadow-sm space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="font-bold text-gray-900">Wallet provider</h4>
+                                            <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Instant</span>
+                                        </div>
+                                        <select value={paymentForm.walletProvider} onChange={(e) => setPaymentForm(prev => ({ ...prev, walletProvider: e.target.value }))} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 bg-white">
+                                            <option>PhonePe</option>
+                                            <option>Paytm</option>
+                                            <option>Amazon Pay</option>
+                                        </select>
+                                    </div>
+                                )}
+
+                                {paymentMethod === 'NETBANKING' && (
+                                    <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-5 shadow-sm space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="font-bold text-gray-900">Choose your bank</h4>
+                                            <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Secure bank flow</span>
+                                        </div>
+                                        <select value={paymentForm.bankName} onChange={(e) => setPaymentForm(prev => ({ ...prev, bankName: e.target.value }))} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 bg-white">
+                                            <option>HDFC Bank</option>
+                                            <option>ICICI Bank</option>
+                                            <option>State Bank of India</option>
+                                            <option>Axis Bank</option>
+                                        </select>
+                                    </div>
+                                )}
+
+                                <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 text-[13px] text-orange-900 mb-5">
+                                    <p className="font-bold mb-1">Demo payment note</p>
+                                    <p>This checkout is simulated end-to-end. Your selection is stored with the order so the history feels like a real payment ledger.</p>
                                 </div>
                             </div>
                         )}
@@ -329,7 +515,7 @@ export default function GlobalCart() {
                                         Back
                                     </button>
                                     <button onClick={handlePlaceOrder} disabled={loading} className="flex-1 py-4 bg-brand text-white rounded-xl font-bold text-[16px] shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 relative overflow-hidden">
-                                        {loading ? 'Processing...' : 'Pay & Order'}
+                                        {loading ? 'Processing Payment...' : checkoutLabel}
                                     </button>
                                 </div>
                             )}

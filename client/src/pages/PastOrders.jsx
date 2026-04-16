@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { orderAPI } from '../services/api';
-import { Clock, Navigation, CheckCircle, Package, MessageSquare } from 'lucide-react';
+import { Clock, Navigation, CheckCircle, Package, MessageSquare, CreditCard, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ReviewForm from '../components/review/ReviewForm';
 
@@ -71,8 +71,8 @@ export default function PastOrders() {
                                     </div>
                                     <div className="flex flex-col items-end">
                                         <span className="font-black text-gray-900 text-lg">₹{order.total_amount}</span>
-                                        <span className="text-[11px] font-bold text-green-600 uppercase tracking-wider bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1 mt-1">
-                                            <CheckCircle size={10} /> {order.status}
+                                        <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 mt-1 ${order.payment_status === 'paid' ? 'text-green-600 bg-green-50' : 'text-amber-700 bg-amber-50'}`}>
+                                            <CheckCircle size={10} /> {order.payment_status || order.status}
                                         </span>
                                     </div>
                                 </div>
@@ -92,8 +92,17 @@ export default function PastOrders() {
                                         ))}
                                     </div>
                                     <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
-                                        <div className="text-sm font-medium text-gray-500">
-                                            Paid via <span className="text-gray-800 font-bold">{order.payment_method}</span>
+                                        <div className="text-sm font-medium text-gray-500 space-y-1">
+                                            <div className="flex items-center gap-1.5 text-gray-500">
+                                                <CreditCard size={14} className="text-brand" />
+                                                <span>
+                                                    Paid via <span className="text-gray-800 font-bold">{order.payment_method}</span>
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-gray-500">
+                                                <ShieldCheck size={14} className="text-brand" />
+                                                <span className="text-[12px]">{order.payment_provider || 'StreetBite Pay'} • {order.payment_reference || 'Pending reference'}</span>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             {order.delivery_distance_km && (
